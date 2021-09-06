@@ -9,9 +9,6 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
 var rootCmd = &cobra.Command{
@@ -45,13 +42,11 @@ func initConfig() {
 	viper.AutomaticEnv()
 
 	if _, inCluster := os.LookupEnv("KUBERNETES_SERVICE_HOST"); inCluster {
-		ctrl.SetLogger(zap.New())
 		log.SetHandler(json.New(os.Stdout))
 		if viper.GetBool("verbose") {
 			log.SetLevel(log.DebugLevel)
 		}
 	} else {
-		ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 		log.SetLevel(log.DebugLevel)
 		log.SetHandler(text.New(os.Stdout))
 	}
