@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/onspaceship/agent/pkg/config"
-	"github.com/onspaceship/agent/pkg/socket/handler"
 
 	"github.com/apex/log"
 	"github.com/gorilla/websocket"
@@ -106,7 +105,7 @@ func (socket *socket) listen(done context.CancelFunc) {
 		if !isPhoenixEvent(message.Event) && message.Topic == "agent:"+socket.AgentId {
 			log.WithField("event", message.Event).WithField("payload", message.Payload).Debug("New message from Ground Control")
 
-			handler.Handle(string(message.Event), message.Payload, socket.Options)
+			socket.handleEvent(string(message.Event), message.Payload)
 		}
 	}
 

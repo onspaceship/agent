@@ -1,20 +1,23 @@
-package handler
+package socket
 
 import (
 	"encoding/json"
 
-	"github.com/onspaceship/agent/pkg/config"
-
 	"github.com/apex/log"
+)
+
+const (
+	AppIdAnnotation      = "onspaceship.com/app-id"
+	DeliveryIdAnnotation = "onspaceship.com/delivery-id"
 )
 
 type deliveryPayload struct {
 	AppId      string `json:"app_id"`
 	DeliveryId string `json:"delivery_id"`
-	TeamHandle string `json:"image_uri"`
+	ImageURI   string `json:"image_uri"`
 }
 
-func handleDelivery(jsonPayload []byte, options *config.SocketOptions) {
+func handleDelivery(jsonPayload []byte, socket *socket) {
 	var payload deliveryPayload
 	err := json.Unmarshal(jsonPayload, &payload)
 	if err != nil {
