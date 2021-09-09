@@ -34,7 +34,7 @@ func (socket *socket) ensureAgentId() {
 	agentId := deployment.Annotations[AgentIdAnnotation]
 
 	if agentId == "" {
-		agentId = uuid.New().String()
+		agentId = uuid.NewString()
 		log.Infof("Generating a new Agent ID: %v", agentId)
 
 		deployment.Annotations[AgentIdAnnotation] = agentId
