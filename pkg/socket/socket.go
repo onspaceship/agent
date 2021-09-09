@@ -11,6 +11,8 @@ import (
 	"github.com/apex/log"
 	"github.com/gorilla/websocket"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 type Options = config.SocketOptions
@@ -18,6 +20,8 @@ type Options = config.SocketOptions
 type socket struct {
 	conn       *websocket.Conn
 	refCounter *refCounter
+
+	client *kubernetes.Clientset
 
 	*Options
 }
@@ -38,8 +42,11 @@ func New() *socket {
 		log.WithError(err).Fatal("failed to configure Ground Control socket")
 	}
 
+	client := kubernetes.NewForConfigOrDie(ctrl.GetConfigOrDie())
+
 	return &socket{
 		Options:    options,
+		client:     client,
 		refCounter: newRefCounter(),
 	}
 }
