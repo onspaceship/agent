@@ -9,8 +9,8 @@ on:
       - master
 
 jobs:
-  build:
-    name: Build
+  test:
+    name: Test
     runs-on: ubuntu-latest
     steps:
       - name: Set up Golang
