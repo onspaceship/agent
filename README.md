@@ -7,7 +7,7 @@
 </h3>
 
 <p align="center">
-  The Spaceship Cluster Agent
+  The Spaceship Kubernetes Cluster Agent
 </p>
 
 ---
