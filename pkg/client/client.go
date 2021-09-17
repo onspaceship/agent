@@ -47,3 +47,8 @@ func (client *Client) Put(url string, body interface{}) (*http.Response, error) 
 
 	return resp, err
 }
+
+func (client *Client) corePath(path string, tokens ...interface{}) string {
+	url, _ := client.CoreBaseURL.Parse(fmt.Sprintf(path, tokens...))
+	return url.String()
+}
