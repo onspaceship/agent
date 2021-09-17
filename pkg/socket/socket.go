@@ -26,17 +26,17 @@ type socket struct {
 	*Options
 }
 
-func StartListener(exit chan bool) {
-	socket := New()
+func StartListener(ctx context.Context) {
+	socket := NewSocket()
 
 	log.Info("Connecting to Ground Control...")
 
 	wait.Forever(socket.Connect, 5*time.Second)
 
-	exit <- true
+	<-ctx.Done()
 }
 
-func New() *socket {
+func NewSocket() *socket {
 	options, err := config.NewSocketOptions()
 	if err != nil {
 		log.WithError(err).Fatal("failed to configure Ground Control socket")

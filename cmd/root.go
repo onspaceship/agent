@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/onspaceship/agent/pkg/socket"
+	"github.com/onspaceship/agent/pkg/watcher"
 
 	"github.com/apex/log"
 	"github.com/apex/log/handlers/json"
@@ -11,17 +12,21 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 var rootCmd = &cobra.Command{
 	Use:   "agent",
 	Short: "The Spaceship cluster agent",
 	Run: func(cmd *cobra.Command, args []string) {
-		exit := make(chan bool)
+		ctx := ctrl.SetupSignalHandler()
 
-		go socket.StartListener(exit)
+		w := watcher.NewWatcher()
+		go w.Start(ctx)
 
-		<-exit
+		go socket.StartListener(ctx)
+
+		<-ctx.Done()
 		log.Info("Done")
 	},
 }

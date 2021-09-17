@@ -5,17 +5,18 @@ import (
 
 	"github.com/apex/log"
 	"github.com/spf13/cobra"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 var connectCmd = &cobra.Command{
 	Use:   "connect",
 	Short: "Connect to Spaceship",
 	Run: func(cmd *cobra.Command, args []string) {
-		exit := make(chan bool)
+		ctx := ctrl.SetupSignalHandler()
 
-		go socket.StartListener(exit)
+		go socket.StartListener(ctx)
 
-		<-exit
+		<-ctx.Done()
 		log.Info("Done")
 	},
 }
