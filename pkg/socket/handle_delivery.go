@@ -12,13 +12,17 @@ import (
 )
 
 const (
-	AppIdAnnotation      = "onspaceship.com/app-id"
+	AppIdLabel           = "onspaceship.com/app-id"
 	DeliveryIdAnnotation = "onspaceship.com/delivery-id"
+	AppHandleAnnotation  = "onspaceship.com/app-handle"
+	TeamHandleAnnotation = "onspaceship.com/team-handle"
 )
 
 type deliveryPayload struct {
-	AppId      string `json:"app_id"`
 	DeliveryId string `json:"delivery_id"`
+	AppId      string `json:"app_id"`
+	AppHandle  string `json:"app_handle"`
+	TeamHandle string `json:"team_handle"`
 	ImageURI   string `json:"image_uri"`
 }
 
@@ -36,7 +40,7 @@ func handleDelivery(jsonPayload []byte, socket *socket) {
 	defer cancel()
 
 	deployments, err := socket.client.AppsV1().Deployments("").List(ctx, metav1.ListOptions{
-		LabelSelector: labels.Set{AppIdAnnotation: payload.AppId}.AsSelector().String(),
+		LabelSelector: labels.Set{AppIdLabel: payload.AppId}.AsSelector().String(),
 	})
 	if err != nil {
 		log.WithError(err).Fatal("Could not get Kubernetes deployment for Agent")
@@ -50,6 +54,10 @@ func handleDelivery(jsonPayload []byte, socket *socket) {
 			container.Image = payload.ImageURI
 			deployment.Spec.Template.Spec.Containers[i] = container
 		}
+
+		deployment.ObjectMeta.Annotations[DeliveryIdAnnotation] = payload.DeliveryId
+		deployment.ObjectMeta.Annotations[AppHandleAnnotation] = payload.AppHandle
+		deployment.ObjectMeta.Annotations[TeamHandleAnnotation] = payload.TeamHandle
 
 		_, err = socket.client.AppsV1().Deployments(deployment.Namespace).Update(ctx, &deployment, metav1.UpdateOptions{})
 		if err != nil {
