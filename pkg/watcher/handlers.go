@@ -7,15 +7,8 @@ import (
 )
 
 func (w *Watcher) onUpdate(_, obj interface{}) {
-	deployment, ok := obj.(*appsv1.Deployment)
-	if !ok {
-		return
-	}
-
-	appId, ok := deployment.Labels[config.AppIdLabel]
-	if !ok {
-		return
-	}
+	deployment := obj.(*appsv1.Deployment)
+	appId := deployment.Labels[config.AppIdLabel]
 
 	log.WithField("deployment", deployment.Name).WithField("appId", appId).Info("updated!")
 }

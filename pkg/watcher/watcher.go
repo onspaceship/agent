@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/onspaceship/agent/pkg/config"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
@@ -19,10 +21,14 @@ type Watcher struct {
 func NewWatcher() *Watcher {
 	client := kubernetes.NewForConfigOrDie(ctrl.GetConfigOrDie())
 
-	factory := informers.NewSharedInformerFactory(
+	factory := informers.NewSharedInformerFactoryWithOptions(
 		client,
 		10*time.Minute,
+		informers.WithTweakListOptions(func(opts *metav1.ListOptions) {
+			opts.LabelSelector = config.AppIdLabel
+		}),
 	)
+
 	return &Watcher{
 		Client:  client,
 		Factory: factory,
