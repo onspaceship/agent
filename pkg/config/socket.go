@@ -13,7 +13,6 @@ const (
 )
 
 type SocketOptions struct {
-	Token   string
 	AgentId string
 
 	Host      string
@@ -31,12 +30,10 @@ func NewSocketOptions() (*SocketOptions, error) {
 }
 
 func (options *SocketOptions) Configure() error {
-	options.Token = viper.GetString("token")
-	if options.Token == "" {
-		log.Fatal("An agent token must be provided.")
-	}
-
 	options.AgentId = viper.GetString("agent_id")
+	if options.AgentId == "" {
+		log.Fatal("An agent ID must be provided.")
+	}
 
 	options.Host = viper.GetString("ground_control_host")
 	if options.Host == "" {

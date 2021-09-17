@@ -60,7 +60,6 @@ func (socket *socket) Connect() {
 	backoff := wait.Backoff{Duration: 2 * time.Second, Factor: 1.25, Jitter: 0.1, Steps: math.MaxInt32}
 	err := wait.ExponentialBackoff(backoff, func() (done bool, err error) {
 		conn, resp, err := websocket.DefaultDialer.DialContext(ctx, socket.Host, http.Header{
-			"X-Token":    {socket.Token},
 			"X-Agent-ID": {socket.AgentId},
 		})
 
