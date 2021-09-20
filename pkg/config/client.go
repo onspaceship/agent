@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	DefaultCoreBaseURL = "https://local.onspaceship.dev:10001/"
+	DefaultCoreBaseURL = "https://core.onspaceship.com/"
 )
 
 type ClientOptions struct {
