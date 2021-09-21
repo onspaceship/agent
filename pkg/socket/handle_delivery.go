@@ -38,8 +38,10 @@ func handleDelivery(jsonPayload []byte, socket *socket) {
 		LabelSelector: labels.Set{config.AppIdLabel: payload.AppId}.AsSelector().String(),
 	})
 	if err != nil {
-		log.WithError(err).Fatal("Could not get Kubernetes deployment for Agent")
+		log.WithError(err).WithField("app_id", payload.AppId).WithField("delivery_id", payload.DeliveryId).Fatal("Could not get deployments for App")
 	}
+
+	log.WithField("app_id", payload.AppId).WithField("delivery_id", payload.DeliveryId).Infof("Found %d deployments", len(deployments.Items))
 
 	for _, deployment := range deployments.Items {
 		logline := log.WithField("deployment", fmt.Sprintf("%s/%s", deployment.Namespace, deployment.Name))
