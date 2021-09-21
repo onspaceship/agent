@@ -14,7 +14,7 @@ func (w *Watcher) onUpdate(_, obj interface{}) {
 	if deliveryId, ok := deployment.Annotations[config.DeliveryIdAnnotation]; !ok {
 		log.WithField("deployment", deployment.Name).Info("No delivery ID found")
 	} else {
-		status := getDeploymentStatus(deployment.Status)
+		status := getDeploymentStatus(deployment)
 
 		log.
 			WithField("deployment", deployment.Name).
@@ -26,12 +26,22 @@ func (w *Watcher) onUpdate(_, obj interface{}) {
 	}
 }
 
-func getDeploymentStatus(status appsv1.DeploymentStatus) string {
-	for i := range status.Conditions {
-		if status.Conditions[i].Status == corev1.ConditionTrue {
-			return string(status.Conditions[i].Type)
+func getDeploymentStatus(deployment *appsv1.Deployment) string {
+	if deployment.Status.Replicas != deployment.Status.AvailableReplicas {
+		return string(appsv1.DeploymentProgressing)
+	}
+
+	for _, cond := range deployment.Status.Conditions {
+		if cond.Type == appsv1.DeploymentAvailable && cond.Status == corev1.ConditionTrue {
+			return string(appsv1.DeploymentAvailable)
 		}
 	}
 
-	return "Created"
+	for _, cond := range deployment.Status.Conditions {
+		if cond.Type == appsv1.DeploymentProgressing && cond.Status == corev1.ConditionTrue {
+			return string(appsv1.DeploymentProgressing)
+		}
+	}
+
+	return string(appsv1.DeploymentReplicaFailure)
 }
