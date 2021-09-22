@@ -28,20 +28,20 @@ func (w *Watcher) onUpdate(_, obj interface{}) {
 
 func getDeploymentStatus(deployment *appsv1.Deployment) string {
 	if deployment.Status.Replicas != deployment.Status.AvailableReplicas {
-		return string(appsv1.DeploymentProgressing)
+		return "deploying"
 	}
 
 	for _, cond := range deployment.Status.Conditions {
 		if cond.Type == appsv1.DeploymentAvailable && cond.Status == corev1.ConditionTrue {
-			return string(appsv1.DeploymentAvailable)
+			return "complete"
 		}
 	}
 
 	for _, cond := range deployment.Status.Conditions {
 		if cond.Type == appsv1.DeploymentProgressing && cond.Status == corev1.ConditionTrue {
-			return string(appsv1.DeploymentProgressing)
+			return "deploying"
 		}
 	}
 
-	return string(appsv1.DeploymentReplicaFailure)
+	return "error"
 }
