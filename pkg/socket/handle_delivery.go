@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/onspaceship/agent/pkg/client"
 	"github.com/onspaceship/agent/pkg/config"
 
 	"github.com/apex/log"
@@ -29,7 +30,86 @@ func handleDelivery(jsonPayload []byte, socket *socket) {
 		return
 	}
 
-	log.WithField("app_id", payload.AppId).WithField("delivery_id", payload.DeliveryId).Info("Handling delivery")
+	logline := log.WithField("app_id", payload.AppId).WithField("delivery_id", payload.DeliveryId)
+	logline.Info("Handling delivery")
+
+	// Run the release job, if present
+
+	ctx := context.Background()
+	releaseJobs, err := socket.client.BatchV1().Jobs("").List(ctx, metav1.ListOptions{
+		LabelSelector: labels.Set{config.AppIdLabel: payload.AppId}.AsSelector().String(),
+	})
+	if err != nil {
+		logline.WithError(err).Fatal("Could not get deployments for App")
+	}
+
+	for _, job := range releaseJobs.Items {
+		jobLog := logline.WithField("job", fmt.Sprintf("%s/%s", job.Namespace, job.Name))
+		jobLog.Info("Running release job")
+
+		core := client.NewClient()
+		core.DeliveryUpdate(payload.DeliveryId, "releasing")
+
+		// Delete the last job
+		jobLog.Info("Deleting prior job")
+		bg := metav1.DeletePropagationBackground
+		err = socket.client.BatchV1().Jobs(job.Namespace).Delete(ctx, job.Name, metav1.DeleteOptions{PropagationPolicy: &bg})
+		if err != nil {
+			jobLog.WithError(err).Fatal("Could not delete job")
+		}
+
+		// Set metadata and clear imutable fields
+		job.ObjectMeta.Annotations[config.DeliveryIdAnnotation] = payload.DeliveryId
+		job.ObjectMeta.Annotations[config.AppHandleAnnotation] = payload.AppHandle
+		job.ObjectMeta.Annotations[config.TeamHandleAnnotation] = payload.TeamHandle
+
+		job.Spec.Template.ObjectMeta.Labels = nil
+		job.Spec.Selector = nil
+
+		job.ObjectMeta.ResourceVersion = ""
+		job.ObjectMeta.UID = ""
+
+		for i, container := range job.Spec.Template.Spec.Containers {
+			container.Image = payload.ImageURI
+			job.Spec.Template.Spec.Containers[i] = container
+		}
+
+		// Create the new job
+		jobLog.Info("Creating a new job")
+		_, err = socket.client.BatchV1().Jobs(job.Namespace).Create(ctx, &job, metav1.CreateOptions{})
+		if err != nil {
+			jobLog.WithError(err).Fatal("Could not create job")
+		}
+
+		timeout := time.After(time.Minute * 10)
+		ticker := time.NewTicker(time.Second * 3)
+
+		// Check every 3 seconds until it finishes and timeout after 10 minutes
+	CheckIfJobRunning:
+		for {
+			select {
+			case <-ticker.C:
+				latestJob, _ := socket.client.BatchV1().Jobs(job.Namespace).Get(ctx, job.Name, metav1.GetOptions{})
+				if latestJob.Status.Failed > 0 {
+					jobLog.Error("Release job failed!")
+					core.DeliveryUpdate(payload.DeliveryId, "error")
+					return
+				} else if latestJob.Status.Active == 0 {
+					jobLog.Info("Release job succeeded!")
+					core.DeliveryUpdate(payload.DeliveryId, "deploying")
+					break CheckIfJobRunning
+				}
+
+				jobLog.Info("Release job still running...")
+			case <-timeout:
+				ticker.Stop()
+				jobLog.Warn("Timeout reached before job completed")
+				break CheckIfJobRunning
+			}
+		}
+	}
+
+	// Update the deployment
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
@@ -38,30 +118,32 @@ func handleDelivery(jsonPayload []byte, socket *socket) {
 		LabelSelector: labels.Set{config.AppIdLabel: payload.AppId}.AsSelector().String(),
 	})
 	if err != nil {
-		log.WithError(err).WithField("app_id", payload.AppId).WithField("delivery_id", payload.DeliveryId).Fatal("Could not get deployments for App")
+		logline.WithError(err).Fatal("Could not get deployments for App")
 	}
 
-	log.WithField("app_id", payload.AppId).WithField("delivery_id", payload.DeliveryId).Infof("Found %d deployments", len(deployments.Items))
+	logline.Infof("Found %d deployments", len(deployments.Items))
 
 	for _, deployment := range deployments.Items {
-		logline := log.WithField("deployment", fmt.Sprintf("%s/%s", deployment.Namespace, deployment.Name))
-		logline.Info("Updating image")
+		deployLog := logline.WithField("deployment", fmt.Sprintf("%s/%s", deployment.Namespace, deployment.Name))
+		deployLog.Info("Updating image")
 
+		// Update the container image
 		for i, container := range deployment.Spec.Template.Spec.Containers {
 			container.Image = payload.ImageURI
 			deployment.Spec.Template.Spec.Containers[i] = container
 		}
 
+		// Update the metadata
 		deployment.ObjectMeta.Annotations[config.DeliveryIdAnnotation] = payload.DeliveryId
 		deployment.ObjectMeta.Annotations[config.AppHandleAnnotation] = payload.AppHandle
 		deployment.ObjectMeta.Annotations[config.TeamHandleAnnotation] = payload.TeamHandle
 
 		_, err = socket.client.AppsV1().Deployments(deployment.Namespace).Update(ctx, &deployment, metav1.UpdateOptions{})
 		if err != nil {
-			logline.WithError(err).Info("Could not update image")
+			deployLog.WithError(err).Info("Could not update image")
 			return
 		} else {
-			logline.Info("Image updated!")
+			deployLog.Info("Image updated!")
 		}
 	}
 }
