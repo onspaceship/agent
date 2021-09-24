@@ -33,6 +33,8 @@ func handleDelivery(jsonPayload []byte, socket *socket) {
 	logline := log.WithField("app_id", payload.AppId).WithField("delivery_id", payload.DeliveryId)
 	logline.Info("Handling delivery")
 
+	core := client.NewClient()
+
 	// Run the release job, if present
 
 	ctx := context.Background()
@@ -47,7 +49,6 @@ func handleDelivery(jsonPayload []byte, socket *socket) {
 		jobLog := logline.WithField("job", fmt.Sprintf("%s/%s", job.Namespace, job.Name))
 		jobLog.Info("Running release job")
 
-		core := client.NewClient()
 		core.DeliveryUpdate(payload.DeliveryId, "releasing")
 
 		// Delete the last job
@@ -122,6 +123,10 @@ func handleDelivery(jsonPayload []byte, socket *socket) {
 	}
 
 	logline.Infof("Found %d deployments", len(deployments.Items))
+
+	if len(deployments.Items) > 0 {
+		core.DeliveryUpdate(payload.DeliveryId, "deploying")
+	}
 
 	for _, deployment := range deployments.Items {
 		deployLog := logline.WithField("deployment", fmt.Sprintf("%s/%s", deployment.Namespace, deployment.Name))
