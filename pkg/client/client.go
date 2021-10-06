@@ -26,6 +26,25 @@ func NewClient() *Client {
 	return &Client{Options: options}
 }
 
+func (client *Client) Get(url string, data interface{}) error {
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", client.AgentId))
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	err = json.NewDecoder(resp.Body).Decode(data)
+
+	return err
+}
+
 func (client *Client) Put(url string, body interface{}) (*http.Response, error) {
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
