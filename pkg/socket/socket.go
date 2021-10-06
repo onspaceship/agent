@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/onspaceship/agent/pkg/config"
+	"github.com/onspaceship/agent/pkg/update"
 
 	"github.com/apex/log"
 	"github.com/gorilla/websocket"
@@ -43,6 +44,8 @@ func NewSocket() *socket {
 	}
 
 	client := kubernetes.NewForConfigOrDie(ctrl.GetConfigOrDie())
+
+	go update.CheckForUpdate(client)
 
 	return &socket{
 		Options:    options,
