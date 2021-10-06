@@ -36,9 +36,13 @@ func ProcessVersionUpdate(version string, client *kubernetes.Clientset) error {
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			log.Info("Unable to get Agent pod")
-		} else {
-			return err
 		}
+		return err
+	}
+
+	if strings.HasSuffix(pod.Spec.Containers[0].Image, version) {
+		log.Info("Already running current version")
+		return nil
 	}
 
 	if len(pod.OwnerReferences) != 1 || pod.OwnerReferences[0].Kind != "ReplicaSet" {
@@ -49,9 +53,8 @@ func ProcessVersionUpdate(version string, client *kubernetes.Clientset) error {
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			log.Info("Unable to get Agent replica set")
-		} else {
-			return err
 		}
+		return err
 	}
 
 	if len(rs.OwnerReferences) != 1 || rs.OwnerReferences[0].Kind != "Deployment" {
@@ -62,9 +65,8 @@ func ProcessVersionUpdate(version string, client *kubernetes.Clientset) error {
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			log.Info("Unable to get Agent deployment")
-		} else {
-			return err
 		}
+		return err
 	}
 
 	imageURI := deployment.Spec.Template.Spec.Containers[0].Image
