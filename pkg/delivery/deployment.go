@@ -33,6 +33,14 @@ func (d *delivery) updateDeployment() {
 			deployment.Spec.Template.Spec.Containers[i] = container
 		}
 
+		secrets, err := d.ensureImagePullSecrets(deployment.Namespace)
+		if err != nil {
+			deployLog.WithError(err).Info("Could not get image pull secrets")
+			return
+		}
+
+		deployment.Spec.Template.Spec.ImagePullSecrets = secrets
+
 		// Update the metadata
 		deployment.ObjectMeta.Annotations[config.DeliveryIdAnnotation] = d.deliveryId
 		deployment.ObjectMeta.Annotations[config.AppHandleAnnotation] = d.appHandle
