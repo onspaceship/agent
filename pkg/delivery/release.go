@@ -48,6 +48,14 @@ func (d *delivery) runReleaseJob() {
 			job.Spec.Template.Spec.Containers[i] = container
 		}
 
+		secrets, err := d.ensureImagePullSecrets(job.Namespace)
+		if err != nil {
+			jobLog.WithError(err).Info("Could not get image pull secrets")
+			return
+		}
+
+		job.Spec.Template.Spec.ImagePullSecrets = secrets
+
 		// Create the new job
 		jobLog.Info("Creating a new job")
 		_, err = d.kubernetes.BatchV1().Jobs(job.Namespace).Create(d.ctx, &job, metav1.CreateOptions{})
