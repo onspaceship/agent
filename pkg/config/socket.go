@@ -35,6 +35,7 @@ func (options *SocketOptions) Configure() error {
 		log.Fatal("An agent ID must be provided.")
 	}
 
+	viper.SetDefault("ground_control_host", DefaultGroundControlHost)
 	options.Host = viper.GetString("ground_control_host")
 	if options.Host == "" {
 		return errors.New("invalid ground_control_host configuration")
@@ -47,8 +48,4 @@ func (options *SocketOptions) Configure() error {
 	options.Namespace = string(namespace)
 
 	return nil
-}
-
-func init() {
-	viper.SetDefault("ground_control_host", DefaultGroundControlHost)
 }

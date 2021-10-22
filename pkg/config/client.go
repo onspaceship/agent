@@ -29,6 +29,7 @@ func (options *ClientOptions) Configure() error {
 		return errors.New("agent ID must be provided")
 	}
 
+	viper.SetDefault("core_base_url", DefaultCoreBaseURL)
 	coreBaseURL, err := url.Parse(viper.GetString("core_base_url"))
 	if err != nil {
 		return errors.New("invalid core_base_url")
@@ -36,8 +37,4 @@ func (options *ClientOptions) Configure() error {
 	options.CoreBaseURL = coreBaseURL
 
 	return nil
-}
-
-func init() {
-	viper.SetDefault("core_base_url", DefaultCoreBaseURL)
 }
