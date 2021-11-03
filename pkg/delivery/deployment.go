@@ -44,7 +44,7 @@ func (d *delivery) updateDeployment() {
 
 		// Update the metadata
 		currentRev, err := strconv.Atoi(deployment.Annotations[config.KubernetesRevisionAnnotation])
-		if err != nil {
+		if err == nil {
 			deployment.ObjectMeta.Annotations[config.DeliveryRevisionAnnotation] = fmt.Sprint(currentRev + 1)
 		}
 
