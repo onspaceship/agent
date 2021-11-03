@@ -2,6 +2,7 @@ package delivery
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/onspaceship/agent/pkg/config"
 
@@ -42,7 +43,11 @@ func (d *delivery) updateDeployment() {
 		deployment.Spec.Template.Spec.ImagePullSecrets = secrets
 
 		// Update the metadata
-		deployment.ObjectMeta.Annotations[config.DeliveryRevisionAnnotation] = deployment.Annotations[config.KubernetesRevisionAnnotation]
+		currentRev, err := strconv.Atoi(deployment.Annotations[config.KubernetesRevisionAnnotation])
+		if err != nil {
+			deployment.ObjectMeta.Annotations[config.DeliveryRevisionAnnotation] = fmt.Sprint(currentRev + 1)
+		}
+
 		deployment.ObjectMeta.Annotations[config.DeliveryIdAnnotation] = d.deliveryId
 		deployment.ObjectMeta.Annotations[config.AppHandleAnnotation] = d.appHandle
 		deployment.ObjectMeta.Annotations[config.TeamHandleAnnotation] = d.teamHandle
