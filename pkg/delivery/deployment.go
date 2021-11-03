@@ -42,6 +42,7 @@ func (d *delivery) updateDeployment() {
 		deployment.Spec.Template.Spec.ImagePullSecrets = secrets
 
 		// Update the metadata
+		deployment.ObjectMeta.Annotations[config.DeliveryRevisionAnnotation] = deployment.Annotations[config.KubernetesRevisionAnnotation]
 		deployment.ObjectMeta.Annotations[config.DeliveryIdAnnotation] = d.deliveryId
 		deployment.ObjectMeta.Annotations[config.AppHandleAnnotation] = d.appHandle
 		deployment.ObjectMeta.Annotations[config.TeamHandleAnnotation] = d.teamHandle
