@@ -32,7 +32,7 @@ That will be the latest version with the code you see here. You will also find t
 
 ## Development
 
-The Agent requires [go 1.16 or higher](https://golang.org/) to build.
+The Agent requires [go 1.20 or higher](https://golang.org/) to build.
 
 We use [Cobra](https://github.com/spf13/cobra) for creating a CLI. The default command is to connect to the Spaceship platform and start watching for Deployment changes. We have a few sub-commands to access specific functionality during development. You can see those with `go run . help`.
 
